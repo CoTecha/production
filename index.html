@@ -505,9 +505,31 @@ function renderChartCultivo(data){
   chartCultivo=new Chart(document.getElementById('chart-cultivo').getContext('2d'),{type:'doughnut',data:{labels,datasets:[{data:values,backgroundColor:colores,borderWidth:2,borderColor:'#faf8f4'}]},plugins:[sp],options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',onClick(e,item,leg){const i=item.index,meta=leg.chart.getDatasetMeta(0);meta.data[i].hidden=!meta.data[i].hidden;item.hidden=meta.data[i].hidden;leg.chart.update();},labels:{font:{size:11},padding:12,boxWidth:12,generateLabels(chart){const meta=chart.getDatasetMeta(0);return chart.data.labels.map((label,i)=>{const hidden=meta.data[i]&&meta.data[i].hidden;return{text:label,fillStyle:hidden?'#ccc':chart.data.datasets[0].backgroundColor[i],strokeStyle:'#faf8f4',lineWidth:2,index:i,hidden,fontColor:hidden?'#aaa':'#444'};});}}}}}}); 
 }
 function renderChartTipo(data){
-  const grupos={75:0,150:0,294:0};data.forEach(r=>{grupos[r.tipo_bandeja]=(grupos[r.tipo_bandeja]||0)+r.num_bandejas;});
+  // Agrupar por tipo_bandeja dinámicamente desde los datos
+  const grupos={};
+  data.forEach(r=>{
+    const k=r.tipo_bandeja;
+    grupos[k]=(grupos[k]||0)+r.num_bandejas;
+  });
+  // Ordenar por alveolas usando dbTipos si está disponible, si no ordenar numéricamente
+  let tiposOrdenados;
+  if(dbTipos&&dbTipos.length){
+    tiposOrdenados=dbTipos
+      .filter(t=>grupos[t.alveolas]!==undefined)
+      .map(t=>({alveolas:t.alveolas,desc:t.descripcion}));
+    // Añadir tipos que estén en datos pero no en dbTipos (por si acaso)
+    Object.keys(grupos).forEach(k=>{
+      if(!tiposOrdenados.find(t=>t.alveolas==k))
+        tiposOrdenados.push({alveolas:parseInt(k),desc:null});
+    });
+  }else{
+    tiposOrdenados=Object.keys(grupos).map(k=>({alveolas:parseInt(k),desc:null})).sort((a,b)=>a.alveolas-b.alveolas);
+  }
+  const labels=tiposOrdenados.map(t=>t.alveolas+(t.desc?' — '+t.desc:' alvéolos'));
+  const values=tiposOrdenados.map(t=>grupos[t.alveolas]||0);
+  const colors=['#7ab870','#4a8c3f','#2d5a25','#74c69d','#40916c','#1a3a2a','#00b4d8'];
   if(chartTipo)chartTipo.destroy();
-  chartTipo=new Chart(document.getElementById('chart-tipo').getContext('2d'),{type:'bar',data:{labels:['75 alvéolos','150 alvéolos','294 alvéolos'],datasets:[{label:'Bandejas',data:[grupos[75],grupos[150],grupos[294]],backgroundColor:['#7ab870','#4a8c3f','#2d5a25'],borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'#f0ece4'}},y:{grid:{display:false}}}}});
+  chartTipo=new Chart(document.getElementById('chart-tipo').getContext('2d'),{type:'bar',data:{labels,datasets:[{label:'Bandejas',data:values,backgroundColor:colors.slice(0,labels.length),borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'#f0ece4'}},y:{grid:{display:false}}}}});
 }
 function renderTabla(data){
   const tbody=document.getElementById('tabla-registros');
