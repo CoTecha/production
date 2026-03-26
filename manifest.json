@@ -1,7 +1,7 @@
 {
   "name": "CoTecha Producción",
-  "short_name": "CoTecha Pro",
-  "description": "Control de producción y semillero",
+  "short_name": "CoTecha Producción",
+  "description": "Control de producción",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#1a3a2a",
